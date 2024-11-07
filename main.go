@@ -21,11 +21,11 @@ func main() {
 	if err != nil {
 		log.Fatalf("error reading config: %v", err)
 	}
-
 	db, err := sql.Open("postgres", cfg.DBURL)
 	if err != nil {
 		log.Fatalf("error connecting to db: %v", err)
 	}
+	defer db.Close()
 	dbQueries := database.New(db)
 
 	programState := &state{
@@ -38,6 +38,8 @@ func main() {
 	}
 	cmds.register("login", handlerLogin)
 	cmds.register("register", handlerRegister)
+	cmds.register("reset", handlerReset)
+	cmds.register("users", handlerListUsers)
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: cli <command> [args...]")
