@@ -29,7 +29,7 @@ func main() {
 
 	if len(os.Args) < 2 {
 		fmt.Println("Usage: cli <command> [args...]")
-		return
+		os.Exit(1)
 	}
 
 	cmdName := os.Args[1]
