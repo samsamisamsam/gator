@@ -2,72 +2,69 @@ package config
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
+	"path/filepath"
 )
 
-const configFileName = "/.gatorconfig.json"
+const configFileName = ".gatorconfig.json"
 
 type Config struct {
-	DbUrl           string `json:"db_url"`
+	DBURL           string `json:"db_url"`
 	CurrentUserName string `json:"current_user_name"`
 }
 
+func (cfg *Config) SetUser(userName string) error {
+	cfg.CurrentUserName = userName
+	return write(*cfg)
+}
+
 func Read() (Config, error) {
-	path, err := getConfigFilePath()
+	fullPath, err := getConfigFilePath()
 	if err != nil {
 		return Config{}, err
 	}
 
-	file, err := os.Open(path)
+	file, err := os.Open(fullPath)
 	if err != nil {
-		return Config{}, fmt.Errorf("error opening config: %w", err)
+		return Config{}, err
 	}
 	defer file.Close()
 
-	config := Config{}
-	err = json.NewDecoder(file).Decode(&config)
+	decoder := json.NewDecoder(file)
+	cfg := Config{}
+	err = decoder.Decode(&cfg)
 	if err != nil {
-		return Config{}, fmt.Errorf("error decoding json config: %w", err)
+		return Config{}, err
 	}
 
-	return config, nil
-}
-
-func (c *Config) SetUser(username string) error {
-	c.CurrentUserName = username
-	return write(*c)
+	return cfg, nil
 }
 
 func getConfigFilePath() (string, error) {
-	path, err := os.UserHomeDir()
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return "", fmt.Errorf("error reading home path: %w", err)
+		return "", err
 	}
-	path = path + configFileName
-	return path, nil
+	fullPath := filepath.Join(home, configFileName)
+	return fullPath, nil
 }
 
 func write(cfg Config) error {
-	path, err := getConfigFilePath()
+	fullPath, err := getConfigFilePath()
 	if err != nil {
 		return err
 	}
 
-	jsonConfig, err := json.Marshal(cfg)
+	file, err := os.Create(fullPath)
 	if err != nil {
-		return fmt.Errorf("error marshaling the data: %w", err)
-	}
-
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0664)
-	if err != nil {
-		return fmt.Errorf("error opening config: %w", err)
+		return err
 	}
 	defer file.Close()
 
-	_, err = file.Write(jsonConfig)
+	encoder := json.NewEncoder(file)
+	err = encoder.Encode(cfg)
 	if err != nil {
-		return fmt.Errorf("error writing config: %w", err)
+		return err
 	}
 
 	return nil
